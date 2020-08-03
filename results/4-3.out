@@ -1,0 +1,144 @@
+Depth  0:        1 total        1 starts 
+Depth  1:        1 total        0 starts 
+Depth  2:        5 total        0 starts 
+Depth  3:       20 total        1 starts 
+Example:
+|    |
+|    |
+|    |
+|AAAA|
+|BBBB|
+|CCCD|
+|DDDC|
+
+Depth  4:      106 total        1 starts 
+Example:
+|    |
+|    |
+|    |
+|AAAA|
+|BBBC|
+|CCCD|
+|DDDB|
+
+Depth  5:      541 total        4 starts 
+Example:
+|    |
+|    |
+|    |
+|AAAB|
+|BBBC|
+|CCCD|
+|DDDA|
+
+Depth  6:     2636 total       16 starts 
+Example:
+|    |
+|    |
+|    |
+|AAAA|
+|BBBC|
+|BDCC|
+|DDDC|
+
+Depth  7:    11356 total       56 starts 
+Example:
+|    |
+|    |
+|    |
+|AAAA|
+|BBBC|
+|CDBD|
+|DDCC|
+
+Depth  8:    43302 total      195 starts 
+Example:
+|    |
+|    |
+|    |
+|AAAB|
+|BBCC|
+|BDCA|
+|DDDC|
+
+Depth  9:   142255 total      550 starts 
+Example:
+|    |
+|    |
+|    |
+|AAAB|
+|BBCD|
+|DCAB|
+|DDCC|
+
+Depth 10:   390444 total     1566 starts 
+Example:
+|    |
+|    |
+|    |
+|AAAB|
+|BBCC|
+|CDAB|
+|CDDD|
+
+Depth 11:   857676 total     4684 starts 
+Example:
+|    |
+|    |
+|    |
+|AABB|
+|BBCC|
+|CDAA|
+|CDDD|
+
+Depth 12:  1404935 total    13077 starts 
+Example:
+|    |
+|    |
+|    |
+|AABB|
+|BCDD|
+|DBAA|
+|DCCC|
+
+Depth 13:  1494852 total    27964 starts 
+Example:
+|    |
+|    |
+|    |
+|ABBB|
+|BCCC|
+|CDDD|
+|DAAA|
+
+Depth 14:   752759 total    37114 starts 
+Example:
+|    |
+|    |
+|    |
+|ABCB|
+|BDAD|
+|CADA|
+|DCBC|
+
+Depth 15:    77983 total    24916 starts 
+Example:
+|    |
+|    |
+|    |
+|ABAA|
+|ABCD|
+|CBCC|
+|DBDD|
+
+Depth 16:     1543 total     1238 starts 
+Example:
+|    |
+|    |
+|    |
+|ABCA|
+|BDAB|
+|CADC|
+|DCBD|
+
+Depth 17:        0 total        0 starts
