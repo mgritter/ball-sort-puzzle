@@ -248,7 +248,7 @@ func NewMapping(numColors int) *Mapping {
 		},
 	}
 	for i := range emptyMap.Colors {
-		emptyMap.Colors[i] = 255
+		emptyMap.Colors[i] = Unassigned
 	}
 	return emptyMap
 }
@@ -257,33 +257,33 @@ func ExtendMapping(m *Mapping, p *Position, toAssign byte) *Mapping {
 	if m.Colors[toAssign-1] != Unassigned {
 		return nil
 	}
-	mapCopy := append([]byte{}, m.Colors...)
-	mapCopy[toAssign-1] = m.NextColor
 
-	lb := make([]byte, 0, len(p.Tubes)*4)
-	for _, t := range p.Tubes {
+	nm := &Mapping{
+		Colors:    append([]byte{}, m.Colors...),
+		NextColor: m.NextColor + 1,
+		Bound: LowerBound{
+			Bytes: make([]byte, len(p.Tubes)*4),
+		},
+	}
+
+	nm.Colors[toAssign-1] = m.NextColor
+
+	for i, t := range p.Tubes {
 		for k := 0; k < 4; k++ {
 			origColor := t[k]
 			var mappedColor byte
 			switch {
 			case origColor == 0:
 				mappedColor = 0
-			case mapCopy[origColor-1] == Unassigned:
-				mappedColor = m.NextColor + 1
+			case nm.Colors[origColor-1] == Unassigned:
+				mappedColor = nm.NextColor
 			default:
-				mappedColor = mapCopy[origColor-1]
+				mappedColor = nm.Colors[origColor-1]
 			}
-			lb = append(lb, mappedColor)
+			nm.Bound.Bytes[i*4+k] = mappedColor
 		}
 	}
 
-	nm := &Mapping{
-		Colors:    mapCopy,
-		NextColor: m.NextColor + 1,
-		Bound: LowerBound{
-			Bytes: lb,
-		},
-	}
 	sort.Sort(&nm.Bound)
 	return nm
 }
