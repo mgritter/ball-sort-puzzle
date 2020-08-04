@@ -90,3 +90,23 @@ Example:
 |CCDD|
 |DECA|
 |DEEE|
+
+Depth 12: 13172834 total    45033 starts 
+Example:
+|    |
+|    |
+|AAAB|
+|BBCC|
+|CCDD|
+|DEAB|
+|DEEE|
+
+Depth 13: 35599236 total   174487 starts 
+Example:
+|    |
+|    |
+|AAAB|
+|BBCC|
+|CDEE|
+|ECAB|
+|EDDD|
