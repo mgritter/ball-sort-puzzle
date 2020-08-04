@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"sync"
 )
 
 type Tube [4]byte
@@ -210,8 +211,9 @@ type MappingQueue struct {
 }
 
 func NewMappingQueue() *MappingQueue {
+	// FIXME: use a pool?
 	return &MappingQueue{
-		Elements: []*Mapping{},
+		Elements: make([]*Mapping, 0, 12),
 	}
 }
 
@@ -239,12 +241,13 @@ func (b *LowerBound) Less(i, j int) bool {
 	return false
 }
 
-func NewMapping(numColors int) *Mapping {
+func NewMapping(numColors int, numTubes int) *Mapping {
+	// FIXME: get this from the pool, too?
 	emptyMap := &Mapping{
 		Colors:    make([]byte, numColors),
 		NextColor: 1,
 		Bound: LowerBound{
-			Bytes: []byte{},
+			Bytes: make([]byte, numTubes*4),
 		},
 	}
 	for i := range emptyMap.Colors {
@@ -253,17 +256,30 @@ func NewMapping(numColors int) *Mapping {
 	return emptyMap
 }
 
+var mappingPool sync.Pool
+
 func ExtendMapping(m *Mapping, p *Position, toAssign byte) *Mapping {
 	if m.Colors[toAssign-1] != Unassigned {
 		return nil
 	}
 
-	nm := &Mapping{
-		Colors:    append([]byte{}, m.Colors...),
-		NextColor: m.NextColor + 1,
-		Bound: LowerBound{
-			Bytes: make([]byte, len(p.Tubes)*4),
-		},
+	po := mappingPool.Get()
+	var nm *Mapping
+	if po == nil {
+		nm = &Mapping{
+			Colors:    append([]byte{}, m.Colors...),
+			NextColor: m.NextColor + 1,
+			Bound: LowerBound{
+				Bytes: make([]byte, len(p.Tubes)*4),
+			},
+		}
+	} else {
+		nm = po.(*Mapping)
+		for i := range m.Colors {
+			nm.Colors[i] = m.Colors[i]
+		}
+		nm.NextColor = m.NextColor + 1
+		// OK to leave LowerBound, it will be completely overwritten
 	}
 
 	nm.Colors[toAssign-1] = m.NextColor
@@ -339,10 +355,15 @@ const debugPriorityQueue = false
 func (p *Position) MakeCanonical(numColors int) {
 	queue := NewMappingQueue()
 
-	heap.Push(queue, NewMapping(numColors))
+	heap.Push(queue, NewMapping(numColors, len(p.Tubes)))
 	var bestMap *Mapping
 
 	for queue.Len() > 0 {
+		// Re-use previous object
+		if bestMap != nil {
+			mappingPool.Put(bestMap)
+		}
+
 		bestMap = heap.Pop(queue).(*Mapping)
 
 		if debugPriorityQueue {
@@ -376,4 +397,10 @@ func (p *Position) MakeCanonical(numColors int) {
 		p.Tubes[i][2] = flat[i*4+2]
 		p.Tubes[i][3] = flat[i*4+3]
 	}
+
+	mappingPool.Put(bestMap)
+	for _, m := range queue.Elements {
+		mappingPool.Put(m)
+	}
+
 }
