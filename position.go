@@ -107,11 +107,50 @@ func (p *Position) CanonicalPredecessors(numColors int) []*Position {
 	return allPreds
 }
 
-func (p *Position) Key() string {
+func (p *Position) Key(numColors int) string {
+	// Squeeze the key into as few bytes as possible.
+	//
+	// up to 7 colors 0-7: 3 bits
+	// up to 16 colors: 0-15: 4 bits
+	// above that: give up
+
 	var buf bytes.Buffer
-	for _, t := range p.Tubes {
-		buf.Write(t[:])
+	if numColors > 16 {
+		for _, t := range p.Tubes {
+			buf.Write(t[:])
+		}
+	} else if numColors > 7 {
+		for _, t := range p.Tubes {
+			b1 := (t[0] << 4) | t[1]
+			b2 := (t[2] << 4) | t[3]
+			buf.WriteByte(b1)
+			buf.WriteByte(b2)
+		}
+	} else {
+		var tmp uint32 = 0
+		bits := 0
+		for _, t := range p.Tubes {
+			packed := (uint32(t[0]) << 9) |
+				(uint32(t[1]) << 6) |
+				(uint32(t[2]) << 3) |
+				(uint32(t[3]))
+			tmp |= (packed << bits)
+			bits += 12
+			// What order is this? It's messed up, but
+			// deterministic
+			for bits >= 8 {
+				buf.WriteByte(byte(tmp & 0xff))
+				tmp = (tmp >> 8)
+				bits -= 8
+			}
+		}
+		for bits > 0 {
+			buf.WriteByte(byte(tmp & 0xff))
+			tmp = (tmp >> 8)
+			bits -= 8
+		}
 	}
+
 	return buf.String()
 }
 
@@ -157,10 +196,14 @@ type LowerBound struct {
 }
 
 type Mapping struct {
-	Colors    map[byte]byte
+	// map color->color, offset by 1
+	// 255 is used as "unassigned"
+	Colors    []byte
 	NextColor byte
 	Bound     LowerBound
 }
+
+const Unassigned byte = 255
 
 type MappingQueue struct {
 	Elements []*Mapping
@@ -196,34 +239,39 @@ func (b *LowerBound) Less(i, j int) bool {
 	return false
 }
 
-func NewMapping() *Mapping {
-	return &Mapping{
-		Colors:    map[byte]byte{0: 0},
+func NewMapping(numColors int) *Mapping {
+	emptyMap := &Mapping{
+		Colors:    make([]byte, numColors),
 		NextColor: 1,
 		Bound: LowerBound{
 			Bytes: []byte{},
 		},
 	}
+	for i := range emptyMap.Colors {
+		emptyMap.Colors[i] = 255
+	}
+	return emptyMap
 }
 
 func ExtendMapping(m *Mapping, p *Position, toAssign byte) *Mapping {
-	mapCopy := make(map[byte]byte)
-	for k, v := range m.Colors {
-		if k == toAssign {
-			return nil
-		}
-		mapCopy[k] = v
+	if m.Colors[toAssign-1] != Unassigned {
+		return nil
 	}
+	mapCopy := append([]byte{}, m.Colors...)
+	mapCopy[toAssign-1] = m.NextColor
 
-	mapCopy[toAssign] = m.NextColor
-
-	lb := []byte{}
+	lb := make([]byte, 0, len(p.Tubes)*4)
 	for _, t := range p.Tubes {
 		for k := 0; k < 4; k++ {
 			origColor := t[k]
-			mappedColor, ok := mapCopy[origColor]
-			if !ok {
+			var mappedColor byte
+			switch {
+			case origColor == 0:
+				mappedColor = 0
+			case mapCopy[origColor-1] == Unassigned:
 				mappedColor = m.NextColor + 1
+			default:
+				mappedColor = mapCopy[origColor-1]
 			}
 			lb = append(lb, mappedColor)
 		}
@@ -291,7 +339,7 @@ const debugPriorityQueue = false
 func (p *Position) MakeCanonical(numColors int) {
 	queue := NewMappingQueue()
 
-	heap.Push(queue, NewMapping())
+	heap.Push(queue, NewMapping(numColors))
 	var bestMap *Mapping
 
 	for queue.Len() > 0 {
